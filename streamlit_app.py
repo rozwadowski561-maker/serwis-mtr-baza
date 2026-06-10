@@ -8,7 +8,7 @@ st.title("🛠️ MTR - System Diagnostyki Maszyn")
 st.write("Ogólnodostępna baza awarii (PC + Telefon)")
 
 # Bezpośredni link do pobierania jako CSV (z poprawnym ID Twojego arkusza)
-URL = https://docs.google.com/spreadsheets/d/15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA/edit?gid=0#gid=0
+URL = "https://docs.google.com/spreadsheets/d/15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA/edit?gid=0#gid=0"
 
 # Wczytanie danych
 try:
