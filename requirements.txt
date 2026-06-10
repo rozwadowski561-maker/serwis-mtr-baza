@@ -1,3 +1,0 @@
-streamlit
-st-files-connection
-streamlit-gsheets
