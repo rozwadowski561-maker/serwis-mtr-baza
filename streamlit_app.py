@@ -20,10 +20,14 @@ except Exception as e:
     df = pd.DataFrame(columns=['dzial', 'linia', 'maszyna', 'objawy', 'do_sprawdzenia'])
     error_mode = True
 
-# Czyszczenie danych
+# Czyszczenie danych na starcie aplikacji
 if not df.empty:
     df = df.dropna(how='all')
     df = df.astype(str)
+    
+    # Czyszczenie ukrytych spacji i enterów z tekstu w bazie
+    for col in df.columns:
+        df[col] = df[col].str.strip()
 
 # --- SEKCJA FILTROWANIA ---
 st.subheader("🔍 Wyszukaj awarię")
@@ -39,10 +43,9 @@ if not error_mode and not df.empty:
         linie = sorted(list(df[df['dzial'] == wybrany_dzial]['linia'].dropna().unique()))
     wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
 
-    # 3. Filtr Maszyna -> TUTAJ NAPRAWIONY BŁĄD DUPLIKATÓW (Homag 3 pojawi się tylko RAZ)
+    # 3. Filtr Maszyna (Homag i inne bazy teraz scalają się bez powtórzeń)
     maszyny = []
     if wybrana_linia and 'maszyna' in df.columns:
-        # Filtrujemy tabelę po dziale i linii, bierzemy kolumnę 'maszyna', wyrzucamy duplikaty (.unique()) i sortujemy
         df_filtrowany_maszyny = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia)]
         maszyny = sorted(list(df_filtrowany_maszyny['maszyna'].dropna().unique()))
         
