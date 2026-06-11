@@ -29,29 +29,26 @@ if not df.empty:
 st.subheader("🔍 Wyszukaj awarię")
 
 if not error_mode and not df.empty:
+    # 1. Filtr Dział
     dzialy = sorted(list(df['dzial'].dropna().unique())) if 'dzial' in df.columns else []
     wybrany_dzial = st.selectbox("Wybierz Dział:", [""] + dzialy)
 
+    # 2. Filtr Linia
     linie = []
     if wybrany_dzial and 'linia' in df.columns:
         linie = sorted(list(df[df['dzial'] == wybrany_dzial]['linia'].dropna().unique()))
     wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
 
-    # Znajdź ten fragment w kodzie w VS Code i zamień na to:
-maszyny = []
-if wybrana_linia:
-    # Funkcja set() sprawi, że Homag 3 pojawi się na liście tylko RAZ, 
-    # niezależnie od tego, ile awarii ma wpisanych w bazie
-    maszyny = sorted(list(set(
-        i['maszyna'] for i in st.session_state.dane 
-        if i.get('dzial') == wybrany_dzial 
-        and i.get('linia') == wybrana_linia 
-        and i.get('maszyna')
-    )))
+    # 3. Filtr Maszyna -> TUTAJ NAPRAWIONY BŁĄD DUPLIKATÓW (Homag 3 pojawi się tylko RAZ)
+    maszyny = []
+    if wybrana_linia and 'maszyna' in df.columns:
+        # Filtrujemy tabelę po dziale i linii, bierzemy kolumnę 'maszyna', wyrzucamy duplikaty (.unique()) i sortujemy
+        df_filtrowany_maszyny = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia)]
+        maszyny = sorted(list(df_filtrowany_maszyny['maszyna'].dropna().unique()))
+        
+    wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
 
-wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
-
-    # Filtrowanie rekordów
+    # --- FILTROWANIE REKORDÓW I WYŚWIETLANIE ---
     filtrowane = pd.DataFrame()
     if wybrana_maszyna:
         filtrowane = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia) & (df['maszyna'] == wybrana_maszyna)]
