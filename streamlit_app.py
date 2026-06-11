@@ -37,10 +37,19 @@ if not error_mode and not df.empty:
         linie = sorted(list(df[df['dzial'] == wybrany_dzial]['linia'].dropna().unique()))
     wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
 
-    maszyny = []
-    if wybrana_linia and 'maszyna' in df.columns:
-        maszyny = sorted(list(df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia)]['maszyna'].dropna().unique()))
-    wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
+    # Znajdź ten fragment w kodzie w VS Code i zamień na to:
+maszyny = []
+if wybrana_linia:
+    # Funkcja set() sprawi, że Homag 3 pojawi się na liście tylko RAZ, 
+    # niezależnie od tego, ile awarii ma wpisanych w bazie
+    maszyny = sorted(list(set(
+        i['maszyna'] for i in st.session_state.dane 
+        if i.get('dzial') == wybrany_dzial 
+        and i.get('linia') == wybrana_linia 
+        and i.get('maszyna')
+    )))
+
+wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
 
     # Filtrowanie rekordów
     filtrowane = pd.DataFrame()
