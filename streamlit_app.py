@@ -4,7 +4,7 @@ import requests
 # Konfiguracja strony pod ekrany smartfonów
 st.set_page_config(page_title="MTR - Diagnostyka Mobilna", layout="centered", page_icon="🛠️")
 
-st.title("🛠️ MTR - Diagnostyka Maszyn")
+st.title("🛠️ MTR - System Diagnostyki Maszyn")
 st.write("Mobilna baza awarii (Podgląd live)")
 
 # === TWOJE SPRAWDZONE KLUCZE DO ODCZYTU CHMURY ===
@@ -13,19 +13,24 @@ API_KEY = "$2a$10$y5.kSvqXKBJ1C3japhFar.w6U3dHO1OgK8k9im6VgKY0PpMkgEwBO"
 URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
 # ==========================================================
 
-@st.cache_data(ttl=30)  # Odświeża dane z chmury max co 30 sekund, żeby oszczędzać internet
+@st.cache_data(ttl=10)  # Odświeża dane bardzo szybko podczas testów
 def pobierz_dane_z_chmury():
     headers = {"X-Master-Key": API_KEY}
     try:
         response = requests.get(URL, headers=headers)
         if response.status_code == 200:
-            dane = response.json()['record']
+            wynik = response.json()['record']
+            
+            # ZABEZPIECZENIE: Jeśli w chmurze leży tekst, a nie lista awarii
+            if isinstance(wynik, str):
+                return []
+                
             # Czyszczenie ukrytych spacji w locie na telefonie
-            for wpis in dane:
+            for wpis in wynik:
                 if 'dzial' in wpis: wpis['dzial'] = str(wpis['dzial']).strip()
                 if 'linia' in wpis: wpis['linia'] = str(wpis['linia']).strip()
                 if 'maszyna' in wpis: wpis['maszyna'] = str(wpis['maszyna']).strip()
-            return dane
+            return wynik
         return []
     except:
         return []
@@ -45,7 +50,7 @@ if dane:
         linie = sorted(list(set(i['linia'] for i in dane if i.get('dzial') == wybrany_dzial and i.get('linia'))))
     wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
 
-    # 3. Filtr Maszyna (Całkowicie bez powtórzeń, czyste "Homag 3")
+    # 3. Filtr Maszyna
     maszyny = []
     if wybrana_linia:
         maszyny = sorted(list(set(
@@ -68,7 +73,6 @@ if dane:
             idx_wybranej = opcje_awarii.index(wybrana_opcja)
             wpis = filtrowane[idx_wybranej]
             
-            # Duży, czytelny układ instrukcji na smartfona
             st.info(f"**OBJAWY:**\n{wpis['objawy']}")
             st.markdown("**⚙️ PROCEDURA SPRAWDZENIA:**")
             for linia in wpis['do_sprawdzenia'].split('\n'):
@@ -77,4 +81,4 @@ if dane:
     elif wybrana_maszyna:
         st.warning("Brak zarejestrowanych awarii dla tej maszyny.")
 else:
-    st.error("Nie udało się pobrać bazy danych z chmury. Sprawdź połączenie internetowe.")
+    st.info("☁️ Chmura jest gotowa, ale obecnie jest pusta. Uruchom program na swoim komputerze (PC) i kliknij 'ZAPISZ' przy dowolnym wpisie, aby wysłać tutaj bazę maszyn z OneDrive.")
