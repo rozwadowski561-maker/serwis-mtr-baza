@@ -4,7 +4,7 @@ import pandas as pd
 # Konfiguracja strony pod telefony i PC
 st.set_page_config(page_title="MTR - Diagnostyka Chmura", layout="wide", page_icon="🛠️")
 
-st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
+st.title("🛠️ Tyracze System Diagnostyki Maszyn")
 st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcina Szatkowskiego ")
 
 # Bezpośredni link do pobierania jako CSV (z poprawnym ID Twojego arkusza)
@@ -84,6 +84,5 @@ else:
 st.write("---")
 st.subheader("📝 Dodawanie i edycja")
 st.info("Aby dodać nową maszynę, linię lub procedurę, dopisz ją po prostu w nowym wierszu w aplikacji Arkusze Google na telefonie. Ta strona zaktualizuje się automatycznie!")
-st.info("W razie problemów pisz mateusz.rozwadowski@inter.ikea.com")
+st.info("W razie problemów pisz mateusz.rozwadowski@inter.ikea.com"" MTR")
 st.info("Nie odbieram po godzinach pracy ani na urlopie")
-st.info("Nikodem i Krzysztof ogarnie.AMEN")
