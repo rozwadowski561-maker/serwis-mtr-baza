@@ -1,89 +1,133 @@
 import streamlit as st
 import pandas as pd
+import os
+import logging
+import warnings
 
-# Konfiguracja strony pod telefony i PC
-st.set_page_config(page_title="MTR - Diagnostyka Chmura", layout="wide", page_icon="🛠️")
+warnings.filterwarnings("ignore", message="missing ScriptRunContext")
+logging.getLogger("streamlit.runtime.scriptrunner").setLevel(logging.ERROR)
+logging.getLogger("streamlit").setLevel(logging.ERROR)
 
-st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
-st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcina Szatkowskiego ")
+# Szeroki układ strony, tak jak na zrzucie
+st.set_page_config(page_title="MTR - System Diagnostyki Maszyn", layout="wide", page_icon="🛠️")
 
-# Bezpośredni link do pobierania jako CSV (z poprawnym ID Twojego arkusza)
-URL = "https://docs.google.com/spreadsheets/d/15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA/export?format=csv"
+# --- STYLIZACJA KAFELKÓW (Zgodna z grafiką) ---
+st.markdown("""
+    <style>
+    /* Szary kafelek procedury po prawej */
+    .procedura-box {
+        background-color: #f0f2f6;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 5px solid #d9534f;
+        height: 100%;
+    }
+    /* Główne tło kontenera diagnostyki */
+    .diagnostyka-container {
+        border: 1px solid #e6e9ef;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #ffffff;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Wczytanie danych
-try:
-    df = pd.read_csv(URL)
-    df.columns = df.columns.str.lower().str.strip()
-    error_mode = False
-except Exception as e:
-    st.error(f"Nie można pobrać danych z Arkusza Google. Upewnij się, że arkusz jest udostępniony dla 'Każdy mający link jako edytujący'. Szczegóły: {e}")
-    df = pd.DataFrame(columns=['dzial', 'linia', 'maszyna', 'objawy', 'do_sprawdzenia'])
-    error_mode = True
+# === ŚCIEŻKI DO PLIKÓW ===
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FILE_PATH = os.path.join(BASE_DIR, "baza_wiedzy.xlsx")
+# Zakładam, że Twoje logo nazywa się 'logo.png' i leży w tym samym folderze
+LOGO_PATH = os.path.join(BASE_DIR, "logo.png") 
 
-# Czyszczenie danych na starcie aplikacji
-if not df.empty:
-    df = df.dropna(how='all')
-    df = df.astype(str)
-    
-    # Czyszczenie ukrytych spacji i enterów z tekstu w bazie
-    for col in df.columns:
-        df[col] = df[col].str.strip()
+def wczytaj_dane():
+    if os.path.exists(FILE_PATH):
+        try:
+            df = pd.read_excel(FILE_PATH)
+            df.columns = [c.strip() for c in df.columns]
+            return df.to_dict(orient='records')
+        except: return []
+    return []
 
-# --- SEKCJA FILTROWANIA ---
-st.subheader("🔍 Wyszukaj awarię")
+if 'dane' not in st.session_state:
+    st.session_state.dane = wczytaj_dane()
 
-if not error_mode and not df.empty:
-    # 1. Filtr Dział
-    dzialy = sorted(list(df['dzial'].dropna().unique())) if 'dzial' in df.columns else []
-    wybrany_dzial = st.selectbox("Wybierz Dział:", [""] + dzialy)
+# =====================================================================
+# NAGŁÓWEK: Logo po lewej, Tytuł po prawej
+# =====================================================================
+col_logo, col_tytul = st.columns([1, 6])
 
-    # 2. Filtr Linia
-    linie = []
-    if wybrany_dzial and 'linia' in df.columns:
-        linie = sorted(list(df[df['dzial'] == wybrany_dzial]['linia'].dropna().unique()))
-    wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
-
-    # 3. Filtr Maszyna (Homag i inne bazy teraz scalają się bez powtórzeń)
-    maszyny = []
-    if wybrana_linia and 'maszyna' in df.columns:
-        df_filtrowany_maszyny = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia)]
-        maszyny = sorted(list(df_filtrowany_maszyny['maszyna'].dropna().unique()))
-        
-    wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
-
-    # --- FILTROWANIE REKORDÓW I WYŚWIETLANIE ---
-    filtrowane = pd.DataFrame()
-    if wybrana_maszyna:
-        filtrowane = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia) & (df['maszyna'] == wybrana_maszyna)]
-
-    # Wyświetlanie wyników
-    if not filtrowane.empty:
-        st.success(f"Znaleziono awarie ({len(filtrowane)}):")
-        opcje_awarii = [f"{idx+1}. Objaw: {row['objawy']}" for idx, row in filtrowane.iterrows() if 'objawy' in row]
-        wybrana_opcja = st.radio("Wybierz awarię, aby zobaczyć szczegóły:", opcje_awarii)
-        
-        if wybrana_opcja:
-            nr_na_liscie = opcje_awarii.index(wybrana_opcja)
-            wpis_do_edycji = filtrowane.iloc[nr_na_liscie]
-            
-            if 'objawy' in wpis_do_edycji:
-                st.info(f"**OBJAWY:**\n{wpis_do_edycji['objawy']}")
-            if 'do_sprawdzenia' in wpis_do_edycji:
-                st.markdown("**⚙️ PROCEDURA SPRAWDZENIA:**")
-                for linia in str(wpis_do_edycji['do_sprawdzenia']).split('\n'):
-                    if linia.strip():
-                        st.markdown(f"👉 {linia}")
+with col_logo:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=120)
     else:
-        if wybrana_maszyna:
-            st.warning("Brak wpisów dla tej maszyny.")
-else:
-    if not error_mode:
-        st.info("Arkusz Google jest pusty. Wpisz pierwszą awarię w arkuszu na telefonie, aby dane się pojawiły!")
+        st.write("🛠️") # Zamiennik, jeśli logo jeszcze nie ma w folderze
 
-# --- INSTRUKCJA ---
+with col_tytul:
+    # Pionowe wyrównanie tytułu za pomocą pustej przestrzeni lub dużego nagłówka
+    st.markdown("<h1 style='margin-top: 15px; color: #1e3a8a;'>MTR System Diagnostyki Maszyn</h1>", unsafe_allow_html=True)
+
 st.write("---")
-st.subheader("📝 Dodawanie i edycja")
-st.info("Aby dodać nową maszynę, linię lub procedurę, dopisz ją po prostu w nowym wierszu w aplikacji Arkusze Google na telefonie. Ta strona zaktualizuje się automatycznie!")
-st.info("W razie problemów pisz mateusz.rozwadowski@inter.ikea.com")
-st.info("Nie odbieram po godzinach pracy ani na urlopie")
-st.info("Nikodem i Krzysztof ogarnie.AMEN")
+
+# =====================================================================
+# SEKCJA FILTROWANIA (Górne selekty ukryte w sidebarze lub na górze strony)
+# =====================================================================
+dzialy = sorted(list(set(i['dzial'] for i in st.session_state.dane if i.get('dzial'))))
+wybrany_dzial = st.selectbox("Wybierz Dział:", [""] + dzialy)
+
+linie = []
+if wybrany_dzial:
+    linie = sorted(list(set(i['linia'] for i in st.session_state.dane if i.get('dzial') == wybrany_dzial and i.get('linia'))))
+wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
+
+maszyny = []
+if wybrana_linia:
+    maszyny = sorted(list(set(i['maszyna'] for i in st.session_state.dane if i.get('dzial') == wybrany_dzial and i.get('linia') == wybrana_linia and i.get('maszyna'))))
+wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
+
+filtrowane = []
+if wybrana_maszyna:
+    filtrowane = [i for i in st.session_state.dane if i.get('dzial') == wybrany_dzial and i.get('linia') == wybrana_linia and i.get('maszyna') == wybrana_maszyna]
+
+# =====================================================================
+# GŁÓWNY PANEL DIAGNOSTYCZNY (Układ z Twojej grafiki)
+# =====================================================================
+st.subheader("Maszyna diagnostyk:")
+
+if filtrowane:
+    # Podział ekranu na dwie kolumny: lewa (szersza) na tabelę, prawa (węższa) na procedurę
+    col_tabela, col_procedura = st.columns([2, 1])
+    
+    # Wybieramy pierwszy pasujący wpis do wyświetlenia (lub możesz dodać st.radio)
+    wpis = filtrowane[0] 
+    
+    with col_tabela:
+        # Tworzymy ładną, czystą tabelę podglądu danych
+        tabela_df = pd.DataFrame([{
+            "Dział": wpis['dzial'],
+            "Linia": wpis['linia'],
+            "Maszyna": wpis['maszyna'],
+            "Opis Awarii": wpis['objawy']
+        }])
+        # Wyświetlamy jako natywną tabelę Streamlit rozciągniętą do szerokości kolumny
+        st.dataframe(tabela_df, use_container_width=True, hide_index=True)
+        
+    with col_procedura:
+        # Kod HTML tworzący szary bloczek z instrukcjami, jak na grafice
+        linie_procedury = "".join([f"<li>{l.strip()}</li>" for l in str(wpis['do_sprawdzenia']).split('\n') if l.strip()])
+        
+        st.markdown(f"""
+            <div class="procedura-box">
+                <h4 style="margin-top:0;">👋 PROCEDURA:</h4>
+                <ol style="padding-left: 20px; font-weight: bold; color: #333;">
+                    {linie_procedury}
+                </ol>
+            </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info("Wybierz Dział, Linię oraz Maszynę z filtrów powyżej, aby wyświetlić diagnostykę.")
+
+# =====================================================================
+# SEKCJA EDYCJI / DODAWANIA (Na samym dole pod linią rozdzielającą)
+# =====================================================================
+st.write("---")
+st.subheader("📝 Dodaj nową awarię lub edytuj wybraną")
+# ... Tutaj zostawiasz swój istniejący kod formularza `with st.form("formularz_wpisu"):` ...
