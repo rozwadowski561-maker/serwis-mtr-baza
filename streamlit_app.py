@@ -1,86 +1,80 @@
 import streamlit as st
-import pandas as pd
+import requests
 
-# Konfiguracja strony pod telefony i PC
-st.set_page_config(page_title="MTR - Diagnostyka Chmura", layout="wide", page_icon="🛠️")
+# Konfiguracja strony pod ekrany smartfonów
+st.set_page_config(page_title="MTR - Diagnostyka Mobilna", layout="centered", page_icon="🛠️")
 
-st.title("🛠️ MTR - System Diagnostyki Maszyn")
-st.write("Ogólnodostępna baza awarii ")
+st.title("🛠️ MTR - Diagnostyka Maszyn")
+st.write("Mobilna baza awarii (Podgląd live)")
 
-# Bezpośredni link do pobierania jako CSV (z poprawnym ID Twojego arkusza)
-URL = "https://docs.google.com/spreadsheets/d/15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA/export?format=csv"
+# === TWOJE SPRAWDZONE KLUCZE DO ODCZYTU CHMURY ===
+BIN_ID = "6a28dc21da38895dfea43ea0"
+API_KEY = "$2a$10$y5.kSvqXKBJ1C3japhFar.w6U3dHO1OgK8k9im6VgKY0PpMkgEwBO"
+URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
+# ==========================================================
 
-# Wczytanie danych
-try:
-    df = pd.read_csv(URL)
-    df.columns = df.columns.str.lower().str.strip()
-    error_mode = False
-except Exception as e:
-    st.error(f"Nie można pobrać danych z Arkusza Google. Upewnij się, że arkusz jest udostępniony dla 'Każdy mający link jako edytujący'. Szczegóły: {e}")
-    df = pd.DataFrame(columns=['dzial', 'linia', 'maszyna', 'objawy', 'do_sprawdzenia'])
-    error_mode = True
+@st.cache_data(ttl=30)  # Odświeża dane z chmury max co 30 sekund, żeby oszczędzać internet
+def pobierz_dane_z_chmury():
+    headers = {"X-Master-Key": API_KEY}
+    try:
+        response = requests.get(URL, headers=headers)
+        if response.status_code == 200:
+            dane = response.json()['record']
+            # Czyszczenie ukrytych spacji w locie na telefonie
+            for wpis in dane:
+                if 'dzial' in wpis: wpis['dzial'] = str(wpis['dzial']).strip()
+                if 'linia' in wpis: wpis['linia'] = str(wpis['linia']).strip()
+                if 'maszyna' in wpis: wpis['maszyna'] = str(wpis['maszyna']).strip()
+            return dane
+        return []
+    except:
+        return []
 
-# Czyszczenie danych na starcie aplikacji
-if not df.empty:
-    df = df.dropna(how='all')
-    df = df.astype(str)
-    
-    # Czyszczenie ukrytych spacji i enterów z tekstu w bazie
-    for col in df.columns:
-        df[col] = df[col].str.strip()
+# Pobranie czystych danych
+dane = pobierz_dane_z_chmury()
 
-# --- SEKCJA FILTROWANIA ---
-st.subheader("🔍 Wyszukaj awarię")
-
-if not error_mode and not df.empty:
+# --- SEKCJA FILTROWANIA NA TELEFONIE ---
+if dane:
     # 1. Filtr Dział
-    dzialy = sorted(list(df['dzial'].dropna().unique())) if 'dzial' in df.columns else []
+    dzialy = sorted(list(set(i['dzial'] for i in dane if i.get('dzial'))))
     wybrany_dzial = st.selectbox("Wybierz Dział:", [""] + dzialy)
 
     # 2. Filtr Linia
     linie = []
-    if wybrany_dzial and 'linia' in df.columns:
-        linie = sorted(list(df[df['dzial'] == wybrany_dzial]['linia'].dropna().unique()))
+    if wybrany_dzial:
+        linie = sorted(list(set(i['linia'] for i in dane if i.get('dzial') == wybrany_dzial and i.get('linia'))))
     wybrana_linia = st.selectbox("Wybierz Linię:", [""] + linie, disabled=not wybrany_dzial)
 
-    # 3. Filtr Maszyna (Homag i inne bazy teraz scalają się bez powtórzeń)
+    # 3. Filtr Maszyna (Całkowicie bez powtórzeń, czyste "Homag 3")
     maszyny = []
-    if wybrana_linia and 'maszyna' in df.columns:
-        df_filtrowany_maszyny = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia)]
-        maszyny = sorted(list(df_filtrowany_maszyny['maszyna'].dropna().unique()))
-        
+    if wybrana_linia:
+        maszyny = sorted(list(set(
+            i['maszyna'] for i in dane 
+            if i.get('dzial') == wybrany_dzial 
+            and i.get('linia') == wybrana_linia 
+            and i.get('maszyna')
+        )))
     wybrana_maszyna = st.selectbox("Wybierz Maszynę:", [""] + maszyny, disabled=not wybrana_linia)
 
-    # --- FILTROWANIE REKORDÓW I WYŚWIETLANIE ---
-    filtrowane = pd.DataFrame()
-    if wybrana_maszyna:
-        filtrowane = df[(df['dzial'] == wybrany_dzial) & (df['linia'] == wybrana_linia) & (df['maszyna'] == wybrana_maszyna)]
+    # --- WYŚWIETLANIE WYNIKÓW ---
+    filtrowane = [i for i in dane if i.get('dzial') == wybrany_dzial and i.get('linia') == wybrana_linia and i.get('maszyna') == wybrana_maszyna]
 
-    # Wyświetlanie wyników
-    if not filtrowane.empty:
+    if wybrana_maszyna and filtrowane:
         st.success(f"Znaleziono awarie ({len(filtrowane)}):")
-        opcje_awarii = [f"{idx+1}. Objaw: {row['objawy']}" for idx, row in filtrowane.iterrows() if 'objawy' in row]
-        wybrana_opcja = st.radio("Wybierz awarię, aby zobaczyć szczegóły:", opcje_awarii)
+        opcje_awarii = [f"{idx+1}. Objaw: {item['objawy']}" for idx, item in enumerate(filtrowane)]
+        wybrana_opcja = st.radio("Wybierz konkretną awarię:", opcje_awarii)
         
         if wybrana_opcja:
-            nr_na_liscie = opcje_awarii.index(wybrana_opcja)
-            wpis_do_edycji = filtrowane.iloc[nr_na_liscie]
+            idx_wybranej = opcje_awarii.index(wybrana_opcja)
+            wpis = filtrowane[idx_wybranej]
             
-            if 'objawy' in wpis_do_edycji:
-                st.info(f"**OBJAWY:**\n{wpis_do_edycji['objawy']}")
-            if 'do_sprawdzenia' in wpis_do_edycji:
-                st.markdown("**⚙️ PROCEDURA SPRAWDZENIA:**")
-                for linia in str(wpis_do_edycji['do_sprawdzenia']).split('\n'):
-                    if linia.strip():
-                        st.markdown(f"👉 {linia}")
-    else:
-        if wybrana_maszyna:
-            st.warning("Brak wpisów dla tej maszyny.")
+            # Duży, czytelny układ instrukcji na smartfona
+            st.info(f"**OBJAWY:**\n{wpis['objawy']}")
+            st.markdown("**⚙️ PROCEDURA SPRAWDZENIA:**")
+            for linia in wpis['do_sprawdzenia'].split('\n'):
+                if linia.strip():
+                    st.markdown(f"👉 {linia}")
+    elif wybrana_maszyna:
+        st.warning("Brak zarejestrowanych awarii dla tej maszyny.")
 else:
-    if not error_mode:
-        st.info("Arkusz Google jest pusty. Wpisz pierwszą awarię w arkuszu na telefonie, aby dane się pojawiły!")
-
-# --- INSTRUKCJA ---
-st.write("---")
-st.subheader("📝 Dodawanie i edycja")
-st.info("Aby dodać nową maszynę, linię lub procedurę, dopisz ją po prostu w nowym wierszu w aplikacji Arkusze Google na telefonie. Ta strona zaktualizuje się automatycznie!")
+    st.error("Nie udało się pobrać bazy danych z chmury. Sprawdź połączenie internetowe.")
