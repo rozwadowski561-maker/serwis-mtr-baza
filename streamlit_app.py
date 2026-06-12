@@ -40,7 +40,7 @@ with col_logo:
     else: st.write("🛠️")
 with col_tytul:
     st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
-    st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcin Szatkowskiego")
+    st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcina Szatkowskiego")
 
 # ID Arkusza Google
 SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
@@ -170,5 +170,5 @@ if not error_mode:
 # --- STOPKA ---
 st.write("---")
 st.info("MTR System Chmurowy v3.1")
-st.info("Pytania pisz mateusz.rozwadowski@inter.ikea.com")
-st.info("udostępnianie surowo zakazane - upierdole ręce w dupe wsadze ")
+st.info(" Wszelakie pytania pisz pod adres : mateusz.rozwadowski@inter.ikea.com")
+st.info("udostępnianie surowo zakazane - upierdole ręce w dupe wsadze więc nie radzę ")
