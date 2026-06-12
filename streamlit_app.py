@@ -54,7 +54,7 @@ if not st.session_state.zalogowany:
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         st.markdown("<h2 style='text-align: center; color: #d9534f;'>🔒 Autoryzacja Systemu MTR</h2>", unsafe_allow_html=True)
-        wpisany_kod = st.text_input("Wprowadź tajny kod dostępu, aby uruchomić bazę diagnostyczną:", type="password")
+        wpisany_kod = st.text_input("Wprowadź kod dostępu, aby uruchomić :", type="password")
         przycisk_wejscia = st.button("URUCHOM APLIKACJĘ", use_container_width=True)
         
         if przycisk_wejscia and wpisany_kod:
