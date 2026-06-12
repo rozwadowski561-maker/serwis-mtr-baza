@@ -42,7 +42,7 @@ with col_tytul:
 SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
 
 # Pobieranie DWÓCH OSOBNYCH KART przez linki eksportu CSV
-URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Struktura"
+URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA/gviz/tq?tqx=out:csv&sheet=Struktura"
 URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Awarie"
 
 # Wczytanie danych z obu kart
