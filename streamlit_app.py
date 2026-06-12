@@ -169,4 +169,6 @@ if not error_mode:
 
 # --- STOPKA ---
 st.write("---")
-st.info("MTR System Chmurowy v3.1 - Pełna integracja z procedurami i bazą haseł online (z opcją zamykania paneli).")
+st.info("MTR System Chmurowy v3.1")
+st.info("Pytania pisz mateusz.rozwadowski@inter.ikea.com")
+st.info("udostępnianie surowo zakazane - upierdole ręce w dupe wsadze ")
