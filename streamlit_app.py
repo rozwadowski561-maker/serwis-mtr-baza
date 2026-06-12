@@ -4,16 +4,16 @@ import requests
 # Konfiguracja strony pod ekrany smartfonów
 st.set_page_config(page_title="MTR - Diagnostyka Mobilna", layout="centered", page_icon="🛠️")
 
-st.title("🛠️ MTR - System Diagnostyki Maszyn")
+st.title("🛠️ MTR - Diagnostyka Maszyn")
 st.write("Mobilna baza awarii (Podgląd live)")
 
-# === TWOJE SPRAWDZONE KLUCZE DO ODCZYTU CHMURY ===
+# === KLUCZE DO ODCZYTU CHMURY ===
 BIN_ID = "6a28dc21da38895dfea43ea0"
 API_KEY = "$2a$10$y5.kSvqXKBJ1C3japhFar.w6U3dHO1OgK8k9im6VgKY0PpMkgEwBO"
 URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
 # ==========================================================
 
-@st.cache_data(ttl=10)  # Odświeża dane bardzo szybko podczas testów
+@st.cache_data(ttl=10)
 def pobierz_dane_z_chmury():
     headers = {"X-Master-Key": API_KEY}
     try:
@@ -21,11 +21,11 @@ def pobierz_dane_z_chmury():
         if response.status_code == 200:
             wynik = response.json()['record']
             
-            # ZABEZPIECZENIE: Jeśli w chmurze leży tekst, a nie lista awarii
-            if isinstance(wynik, str):
+            # ZABEZPIECZENIE: Jeśli w chmurze leży tekst typu "pusta baza", zwróć pustą listę
+            if isinstance(wynik, str) or not isinstance(wynik, list):
                 return []
                 
-            # Czyszczenie ukrytych spacji w locie na telefonie
+            # Czyszczenie ukrytych spacji w locie
             for wpis in wynik:
                 if 'dzial' in wpis: wpis['dzial'] = str(wpis['dzial']).strip()
                 if 'linia' in wpis: wpis['linia'] = str(wpis['linia']).strip()
@@ -35,7 +35,7 @@ def pobierz_dane_z_chmury():
     except:
         return []
 
-# Pobranie czystych danych
+# Pobranie danych
 dane = pobierz_dane_z_chmury()
 
 # --- SEKCJA FILTROWANIA NA TELEFONIE ---
@@ -81,4 +81,4 @@ if dane:
     elif wybrana_maszyna:
         st.warning("Brak zarejestrowanych awarii dla tej maszyny.")
 else:
-    st.info("☁️ Chmura jest gotowa, ale obecnie jest pusta. Uruchom program na swoim komputerze (PC) i kliknij 'ZAPISZ' przy dowolnym wpisie, aby wysłać tutaj bazę maszyn z OneDrive.")
+    st.info("☁️ Serwer mobilny działa! Chmura jest jednak pusta. Uruchom program na swoim komputerze (PC) i kliknij 'ZAPISZ' przy dowolnej awarii, aby przesłać tutaj bazę z OneDrive.")
