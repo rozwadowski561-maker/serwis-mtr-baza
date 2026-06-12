@@ -131,4 +131,4 @@ if not error_mode:
 
 # --- STOPKA ---
 st.write("---")
-st.info("MTR System Chmurowy v2.0 - Dane zaciągane na żywo z Twojego telefonu.")
+st.info("MTR  - Dane zaciągane na żywo z Arkusza Exel.")
