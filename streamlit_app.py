@@ -10,7 +10,7 @@ logging.getLogger("streamlit").setLevel(logging.ERROR)
 
 st.set_page_config(page_title="MTR - Diagnostyka Chmura", layout="wide", page_icon="🛠️")
 
-# --- STYLIZACJA KAFELKA PROCEDURY ---
+# --- STYLIZACJA KAFELKÓW I PROCEDUR ---
 st.markdown("""
     <style>
     .procedura-box {
@@ -19,6 +19,13 @@ st.markdown("""
         border-radius: 8px;
         border-left: 5px solid #ff9800;
         height: 100%;
+    }
+    .hasla-box {
+        background-color: #eff6ff;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 5px solid #3b82f6;
+        margin-bottom: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -38,37 +45,62 @@ with col_tytul:
 # ID Arkusza Google
 SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
 
-# Pobieranie danych z jawnym wymuszeniem kodowania UTF-8 i czyszczenia ukrytych znaczników (utf-8-sig)
+# Linki do trzech osobnych kart z chmury Google
 URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
 URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410"
 
+# ⚠️ TUTAJ WPISZ NUMER GID SWOJEJ TRZECIEJ KARTY Z HASŁAMI (odczytany z przeglądarki)!
+GID_HASLA = "WPISZ_TUTAJ_NUMER_GID_NOWEJ_KARTY" 
+URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_HASLA}"
+
 try:
-    # Wczytanie z automatycznym usunięciem ukrytych śmieci systemowych (BOM) z nagłówków
+    # Pobieranie danych ze wszystkich trzech zakładkek
     df_st = pd.read_csv(URL_STRUKTURA, encoding='utf-8-sig').fillna("").astype(str)
     df_aw = pd.read_csv(URL_AWARIE, encoding='utf-8-sig').fillna("").astype(str)
+    df_hd = pd.read_csv(URL_HASLA, encoding='utf-8-sig').fillna("").astype(str)
     
-    # Czyszczenie nazw kolumn: usuwamy spacji i zmieniamy na małe litery
+    # Standaryzacja nagłówków kolumn
     df_st.columns = df_st.columns.str.strip().str.lower()
     df_aw.columns = df_aw.columns.str.strip().str.lower()
+    df_hd.columns = df_hd.columns.str.strip().str.lower()
     
-    # Mapowanie na wypadek polskich znaków w nagłówkach (dział / dzial)
     df_st = df_st.rename(columns={'dział': 'dzial'})
-    df_aw = df_aw.rename(columns={'do_sprawdzenia': 'do_sprawdzenia'})
     
-    # Czyszczenie wnętrza tabeli
+    # Czyszczenie wnętrza tabel
     for col in df_st.columns: df_st[col] = df_st[col].str.strip()
     for col in df_aw.columns: df_aw[col] = df_aw[col].str.strip()
+    for col in df_hd.columns: df_hd[col] = df_hd[col].str.strip()
     
     error_mode = False
 except Exception as e:
-    st.error(f"Nie można pobrać danych z Arkusza Google. Sprawdź czy arkusz jest udostępniony. Szczegóły błędu: {e}")
+    st.error(f"Nie można pobrać danych z Arkusza Google. Sprawdź poprawność linków i GID. Szczegóły: {e}")
     error_mode = True
 
-# --- SEKCJA FILTROWANIA ---
+# =====================================================================
+# NOWOŚĆ: SEKCJA ŻARÓWKI (SYSTEMU HASEŁ)
+# =====================================================================
+if not error_mode:
+    st.write("---")
+    
+    # Przycisk wysuwający bazę haseł
+    if st.button("💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN", use_container_width=True):
+        st.markdown('<div class="hasla-box">', unsafe_allow_html=True)
+        st.markdown("### 🔐 Ściągawka z haseł i dostępów HMI / PLC:")
+        
+        if not df_hd.empty:
+            # Wyświetlenie haseł w ładnej, czystej tabeli bez zbędnych indeksów bocznych
+            st.dataframe(df_hd, use_container_width=True, hide_index=True)
+        else:
+            st.warning("Karta z hasłami w Arkuszu Google jest obecnie pusta.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# =====================================================================
+# SEKCJA FILTROWANIA (Główna wyszukiwarka)
+# =====================================================================
+st.write("---")
 st.subheader("🔍 Wyszukaj awarię")
 
 if not error_mode:
-    # Sprawdzamy czy wymagane kolumny w ogóle istnieją po wyczyszczeniu
     if 'dzial' in df_st.columns and 'linia' in df_st.columns and 'maszyna' in df_st.columns:
         c1, c2, c3 = st.columns(3)
         
@@ -88,7 +120,7 @@ if not error_mode:
                 maszyny = list(df_st[(df_st['dzial'] == wybrany_dzial) & (df_st['linia'] == wybrana_linia)]['maszyna'].dropna().unique())
             wybrana_maszyna = st.selectbox("Wybierz Komponent / Stację:", [""] + maszyny, disabled=not wybrana_linia)
 
-        # --- PANEL GŁÓWNY ---
+        # --- PANEL DIAGNOSTYCZNY ---
         st.write("---")
         st.subheader("📋 Maszyna diagnostyk:")
 
@@ -107,7 +139,6 @@ if not error_mode:
                     wpis = awarie_maszyny.iloc[idx_wybranej]
                     
                 with col_procedura:
-                    # Pobieranie kolumny z procedurą (obsługuje małe/wielkie litery)
                     col_proc_name = 'do_sprawdzenia' if 'do_sprawdzenia' in wpis else wpis.index[2]
                     linie_procedury = "".join([f"<li>{l.strip()}</li>" for l in str(wpis[col_proc_name]).split('\n') if l.strip()])
                     
@@ -127,8 +158,8 @@ if not error_mode:
         else:
             st.info("Wybierz Dział, Linię oraz odpowiedni Komponent z filtrów u góry, aby otworzyć procedury.")
     else:
-        st.error("Błąd struktury kolumn w Arkuszu Google! Upewnij się, że nagłówki w pierwszym wierszu to: Dział, Linia, Maszyna.")
+        st.error("Błąd struktury kolumn w Arkuszu Google! Sprawdź nagłówki.")
 
 # --- STOPKA ---
 st.write("---")
-st.info("MTR  - Dane zaciągane na żywo z Arkusza Exel.")
+st.info("MTR System Chmurowy v3.0 - Pełna integracja z procedurami i bazą haseł online.")
