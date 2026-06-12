@@ -40,12 +40,12 @@ with col_logo:
     else: st.write("🛠️")
 with col_tytul:
     st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
-    st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcina Szatkowskiego")
+    st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcin Szatkowskiego")
 
 # ID Arkusza Google
 SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
 
-# Linki do trzech osobnych kart z chmury Google
+# Linki do trzech osobnych kart z chmury Google (Twoje aktualne GID)
 URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
 URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410" 
 URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1929302363"
@@ -74,18 +74,28 @@ except Exception as e:
     error_mode = True
 
 # =====================================================================
-# NOWOŚĆ: SEKCJA ŻARÓWKI (SYSTEMU HASEŁ)
+# SEKCJA ŻARÓWKI (Z FUNKCJĄ OTWIERANIA I ZAMYKANIA)
 # =====================================================================
+if 'pokaz_hasla' not in st.session_state:
+    st.session_state.pokaz_hasla = False  # Na starcie aplikacja ładuje się z ukrytymi hasłami
+
 if not error_mode:
     st.write("---")
     
-    # Przycisk wysuwający bazę haseł
-    if st.button("💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN", use_container_width=True):
+    # Dynamiczny tekst na przycisku zależny od stanu pamięci systemu
+    etykieta_przycisku = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN"
+    
+    if st.button(etykieta_przycisku, use_container_width=True):
+        # Odwrócenie stanu (zamykanie/otwieranie) po kliknięciu
+        st.session_state.pokaz_hasla = not st.session_state.pokaz_hasla
+        st.rerun()  # Natychmiastowe przeładowanie widoku przycisku i tabeli
+
+    # Jeśli użytkownik włączył podgląd – pokazujemy niebieski boks z hasłami
+    if st.session_state.pokaz_hasla:
         st.markdown('<div class="hasla-box">', unsafe_allow_html=True)
         st.markdown("### 🔐 Ściągawka z haseł i dostępów HMI / PLC:")
         
         if not df_hd.empty:
-            # Wyświetlenie haseł w ładnej, czystej tabeli bez zbędnych indeksów bocznych
             st.dataframe(df_hd, use_container_width=True, hide_index=True)
         else:
             st.warning("Karta z hasłami w Arkuszu Google jest obecnie pusta.")
@@ -159,4 +169,4 @@ if not error_mode:
 
 # --- STOPKA ---
 st.write("---")
-st.info("MTR System Chmurowy v3.0 - Pełna integracja z procedurami i bazą haseł online.")
+st.info("MTR System Chmurowy v3.1 - Pełna integracja z procedurami i bazą haseł online (z opcją zamykania paneli).")
