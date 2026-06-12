@@ -4,7 +4,7 @@ import pandas as pd
 # Konfiguracja strony pod telefony i PC
 st.set_page_config(page_title="MTR - Diagnostyka Chmura", layout="wide", page_icon="🛠️")
 
-st.title("🛠️ MTR - System Diagnostyki Maszyn")
+st.title("🛠️ MTR i Tyracze "System Diagnostyki Maszyn"")
 st.write("Ogólnodostępna baza awarii ")
 
 # Bezpośredni link do pobierania jako CSV (z poprawnym ID Twojego arkusza)
