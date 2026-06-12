@@ -33,6 +33,75 @@ st.markdown("""
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGO_PATH = os.path.join(BASE_DIR, "logo.png")
 
+# ID Arkusza Google
+SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
+
+# Linki do kart struktury, awarii i haseł
+URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
+URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410" 
+URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1929302363"
+URL_DOSTEP = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=410003846"
+
+# Inicjalizacja stanu autoryzacji w pamięci aplikacji
+if 'zalogowany' not in st.session_state:
+    st.session_state.zalogowany = False
+
+# =====================================================================
+# BLOKADA DOSTĘPU: OKNO LOGOWANIA
+# =====================================================================
+if not st.session_state.zalogowany:
+    st.write("---")
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        st.markdown("<h2 style='text-align: center; color: #d9534f;'>🔒 Autoryzacja Systemu MTR</h2>", unsafe_allow_html=True)
+        wpisany_kod = st.text_input("Wprowadź tajny kod dostępu, aby uruchomić bazę diagnostyczną:", type="password")
+        przycisk_wejscia = st.button("URUCHOM APLIKACJĘ", use_container_width=True)
+        
+        if przycisk_wejscia and wpisany_kod:
+            try:
+                # Pobieramy aktualne hasło prosto z chmury Google przed wpuszczeniem użytkownika
+                df_kod = pd.read_csv(URL_DOSTEP, encoding='utf-8-sig').fillna("").astype(str)
+                df_kod.columns = df_kod.columns.str.strip().str.lower()
+                
+                if 'klucz' in df_kod.columns and not df_kod.empty:
+                    prawdziwe_haslo = df_kod['klucz'].iloc[0].strip()
+                    
+                    # Weryfikacja kodu
+                    if wpisany_kod.strip() == prawdziwe_haslo:
+                        st.session_state.zalogowany = True
+                        st.success("Kod poprawny! Ładowanie systemu...")
+                        st.rerun()
+                    else:
+                        st.error("🔴 Nieprawidłowy kod dostępu! Nie masz uprawnień do tej bazy.")
+                else:
+                    st.error("Błąd konfiguracji hasła w Arkuszu Google (brak kolumny 'klucz').")
+            except Exception as e:
+                st.error(f"Nie można zweryfikować uprawnień. Brak połączenia lub zły GID. Szczegóły: {e}")
+    st.stop() # Całkowicie zatrzymuje generowanie reszty strony, dopóki brak zalogowania
+
+# =====================================================================
+# RESZTA KODU APLIKACJI (Uruchamia się TYLKO po podaniu dobrego hasła)
+# =====================================================================
+try:
+    df_st = pd.read_csv(URL_STRUKTURA, encoding='utf-8-sig').fillna("").astype(str)
+    df_aw = pd.read_csv(URL_AWARIE, encoding='utf-8-sig').fillna("").astype(str)
+    df_hd = pd.read_csv(URL_HASLA, encoding='utf-8-sig').fillna("").astype(str)
+    
+    df_st.columns = df_st.columns.str.strip().str.lower()
+    df_aw.columns = df_aw.columns.str.strip().str.lower()
+    df_hd.columns = df_hd.columns.str.strip().str.lower()
+    
+    df_st = df_st.rename(columns={'dział': 'dzial'})
+    
+    for col in df_st.columns: df_st[col] = df_st[col].str.strip()
+    for col in df_aw.columns: df_aw[col] = df_aw[col].str.strip()
+    for col in df_hd.columns: df_hd[col] = df_hd[col].str.strip()
+    
+    error_mode = False
+except Exception as e:
+    st.error(f"Nie można pobrać danych z Arkusza Google. Szczegóły: {e}")
+    error_mode = True
+
 # --- NAGŁÓWEK ---
 col_logo, col_tytul = st.columns([1, 6])
 with col_logo:
@@ -40,70 +109,30 @@ with col_logo:
     else: st.write("🛠️")
 with col_tytul:
     st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
-    st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcina Szatkowskiego")
+    st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcin Szatkowskiego")
 
-# ID Arkusza Google
-SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
-
-# Linki do trzech osobnych kart z chmury Google (Twoje aktualne GID)
-URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
-URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410" 
-URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1929302363"
-
-try:
-    # Pobieranie danych ze wszystkich trzech zakładkek
-    df_st = pd.read_csv(URL_STRUKTURA, encoding='utf-8-sig').fillna("").astype(str)
-    df_aw = pd.read_csv(URL_AWARIE, encoding='utf-8-sig').fillna("").astype(str)
-    df_hd = pd.read_csv(URL_HASLA, encoding='utf-8-sig').fillna("").astype(str)
-    
-    # Standaryzacja nagłówków kolumn
-    df_st.columns = df_st.columns.str.strip().str.lower()
-    df_aw.columns = df_aw.columns.str.strip().str.lower()
-    df_hd.columns = df_hd.columns.str.strip().str.lower()
-    
-    df_st = df_st.rename(columns={'dział': 'dzial'})
-    
-    # Czyszczenie wnętrza tabel
-    for col in df_st.columns: df_st[col] = df_st[col].str.strip()
-    for col in df_aw.columns: df_aw[col] = df_aw[col].str.strip()
-    for col in df_hd.columns: df_hd[col] = df_hd[col].str.strip()
-    
-    error_mode = False
-except Exception as e:
-    st.error(f"Nie można pobrać danych z Arkusza Google. Sprawdź poprawność linków i GID. Szczegóły: {e}")
-    error_mode = True
-
-# =====================================================================
-# SEKCJA ŻARÓWKI (Z FUNKCJĄ OTWIERANIA I ZAMYKANIA)
-# =====================================================================
+# --- SEKCJA ŻARÓWKI ---
 if 'pokaz_hasla' not in st.session_state:
-    st.session_state.pokaz_hasla = False  # Na starcie aplikacja ładuje się z ukrytymi hasłami
+    st.session_state.pokaz_hasla = False
 
 if not error_mode:
     st.write("---")
-    
-    # Dynamiczny tekst na przycisku zależny od stanu pamięci systemu
-    etykieta_przycisku = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA DO MASZYN"
+    etykieta_przycisku = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN"
     
     if st.button(etykieta_przycisku, use_container_width=True):
-        # Odwrócenie stanu (zamykanie/otwieranie) po kliknięciu
         st.session_state.pokaz_hasla = not st.session_state.pokaz_hasla
-        st.rerun()  # Natychmiastowe przeładowanie widoku przycisku i tabeli
+        st.rerun()
 
-    # Jeśli użytkownik włączył podgląd – pokazujemy niebieski boks z hasłami
     if st.session_state.pokaz_hasla:
         st.markdown('<div class="hasla-box">', unsafe_allow_html=True)
         st.markdown("### 🔐 Ściągawka z haseł i dostępów HMI / PLC:")
-        
         if not df_hd.empty:
             st.dataframe(df_hd, use_container_width=True, hide_index=True)
         else:
             st.warning("Karta z hasłami w Arkuszu Google jest obecnie pusta.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-# =====================================================================
-# SEKCJA FILTROWANIA (Główna wyszukiwarka)
-# =====================================================================
+# --- SEKCJA FILTROWANIA ---
 st.write("---")
 st.subheader("🔍 Wyszukaj awarię")
 
