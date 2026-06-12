@@ -72,7 +72,7 @@ if not st.session_state.zalogowany:
                         st.success("Kod poprawny! Ładowanie systemu...")
                         st.rerun()
                     else:
-                        st.error("🔴 Nieprawidłowy kod dostępu! Nie masz uprawnień do tej bazy.")
+                        st.error("🔴 Nieprawidłowy kod dostępu! Nie masz uprawnień do tej bazy Spierdalaj !!!.")
                 else:
                     st.error("Błąd konfiguracji hasła w Arkuszu Google (brak kolumny 'klucz').")
             except Exception as e:
