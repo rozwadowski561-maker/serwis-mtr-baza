@@ -84,3 +84,6 @@ else:
 st.write("---")
 st.subheader("📝 Dodawanie i edycja")
 st.info("Aby dodać nową maszynę, linię lub procedurę, dopisz ją po prostu w nowym wierszu w aplikacji Arkusze Google na telefonie. Ta strona zaktualizuje się automatycznie!")
+st.info("W razie problemów pisz mateusz.rozwadowski@inter.ikea.com")
+st.info("Nie odbieram po godzinach pracy ani na urlopie")
+st.info("Nikodem i Krzysztof ogarnie.AMEN")
