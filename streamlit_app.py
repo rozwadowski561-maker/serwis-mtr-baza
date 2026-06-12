@@ -5,7 +5,7 @@ import pandas as pd
 st.set_page_config(page_title="MTR - Diagnostyka Chmura", layout="wide", page_icon="🛠️")
 
 st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
-st.write("Ogólnodostępna baza awarii ")
+st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcina Szatkowskiego ")
 
 # Bezpośredni link do pobierania jako CSV (z poprawnym ID Twojego arkusza)
 URL = "https://docs.google.com/spreadsheets/d/15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA/export?format=csv"
