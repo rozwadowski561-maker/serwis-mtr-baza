@@ -83,7 +83,7 @@ if not error_mode:
     st.write("---")
     
     # Dynamiczny tekst na przycisku zależny od stanu pamięci systemu
-    etykieta_przycisku = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN"
+    etykieta_przycisku = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA DO MASZYN"
     
     if st.button(etykieta_przycisku, use_container_width=True):
         # Odwrócenie stanu (zamykanie/otwieranie) po kliknięciu
