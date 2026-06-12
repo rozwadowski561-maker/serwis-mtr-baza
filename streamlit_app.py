@@ -47,11 +47,8 @@ SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
 
 # Linki do trzech osobnych kart z chmury Google
 URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
-URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410"
-
-# ⚠️ TUTAJ WPISZ NUMER GID SWOJEJ TRZECIEJ KARTY Z HASŁAMI (odczytany z przeglądarki)!
-GID_HASLA = "WPISZ_TUTAJ_NUMER_GID_NOWEJ_KARTY" 
-URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_HASLA}"
+URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410" 
+URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1929302363"
 
 try:
     # Pobieranie danych ze wszystkich trzech zakładkek
