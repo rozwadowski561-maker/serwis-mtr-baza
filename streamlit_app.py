@@ -27,6 +27,13 @@ st.markdown("""
         border-left: 5px solid #3b82f6;
         margin-bottom: 20px;
     }
+    .falownik-box {
+        background-color: #fef2f2;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 5px solid #ef4444;
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -36,13 +43,13 @@ LOGO_PATH = os.path.join(BASE_DIR, "logo.png")
 # ID Arkusza Google
 SPREADSHEET_ID = "15Q3ZBttJYpg6XZlqNbr_u6aJQAxLVh-2GCQ6ENibYpA"
 
-# Linki do kart struktury, awarii i haseł
+# Linki do kart z chmury Google
 URL_STRUKTURA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
 URL_AWARIE = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1458408410" 
 URL_HASLA = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=1929302363"
 URL_DOSTEP = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=410003846"
+URL_KATALOGI = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=333085441"
 
-# Inicjalizacja stanu autoryzacji w pamięci aplikacji
 if 'zalogowany' not in st.session_state:
     st.session_state.zalogowany = False
 
@@ -59,14 +66,12 @@ if not st.session_state.zalogowany:
         
         if przycisk_wejscia and wpisany_kod:
             try:
-                # Pobieramy aktualne hasło prosto z chmury Google przed wpuszczeniem użytkownika
                 df_kod = pd.read_csv(URL_DOSTEP, encoding='utf-8-sig').fillna("").astype(str)
                 df_kod.columns = df_kod.columns.str.strip().str.lower()
                 
                 if 'klucz' in df_kod.columns and not df_kod.empty:
                     prawdziwe_haslo = df_kod['klucz'].iloc[0].strip()
                     
-                    # Weryfikacja kodu
                     if wpisany_kod.strip() == prawdziwe_haslo:
                         st.session_state.zalogowany = True
                         st.success("Kod poprawny! Ładowanie systemu...")
@@ -77,25 +82,28 @@ if not st.session_state.zalogowany:
                     st.error("Błąd konfiguracji hasła w Arkuszu Google (brak kolumny 'klucz').")
             except Exception as e:
                 st.error(f"Nie można zweryfikować uprawnień. Brak połączenia lub zły GID. Szczegóły: {e}")
-    st.stop() # Całkowicie zatrzymuje generowanie reszty strony, dopóki brak zalogowania
+    st.stop()
 
 # =====================================================================
-# RESZTA KODU APLIKACJI (Uruchamia się TYLKO po podaniu dobrego hasła)
+# POBIERANIE DANYCH Z CHMURY GOOGLE
 # =====================================================================
 try:
     df_st = pd.read_csv(URL_STRUKTURA, encoding='utf-8-sig').fillna("").astype(str)
     df_aw = pd.read_csv(URL_AWARIE, encoding='utf-8-sig').fillna("").astype(str)
     df_hd = pd.read_csv(URL_HASLA, encoding='utf-8-sig').fillna("").astype(str)
+    df_kt = pd.read_csv(URL_KATALOGI, encoding='utf-8-sig').fillna("").astype(str)
     
     df_st.columns = df_st.columns.str.strip().str.lower()
     df_aw.columns = df_aw.columns.str.strip().str.lower()
     df_hd.columns = df_hd.columns.str.strip().str.lower()
+    df_kt.columns = df_kt.columns.str.strip().str.lower()
     
     df_st = df_st.rename(columns={'dział': 'dzial'})
     
     for col in df_st.columns: df_st[col] = df_st[col].str.strip()
     for col in df_aw.columns: df_aw[col] = df_aw[col].str.strip()
     for col in df_hd.columns: df_hd[col] = df_hd[col].str.strip()
+    for col in df_kt.columns: df_kt[col] = df_kt[col].str.strip()
     
     error_mode = False
 except Exception as e:
@@ -111,18 +119,31 @@ with col_tytul:
     st.title("🛠️ MTR i Tyracze System Diagnostyki Maszyn")
     st.write("Ogólnodostępna baza awarii dla zmiany Szefa Marcin Szatkowskiego")
 
-# --- SEKCJA ŻARÓWKI ---
-if 'pokaz_hasla' not in st.session_state:
-    st.session_state.pokaz_hasla = False
+# Inicjalizacja stanów paneli rozwijanych
+if 'pokaz_hasla' not in st.session_state: st.session_state.pokaz_hasla = False
+if 'pokaz_katalogi' not in st.session_state: st.session_state.pokaz_katalogi = False
 
 if not error_mode:
     st.write("---")
-    etykieta_przycisku = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN"
     
-    if st.button(etykieta_przycisku, use_container_width=True):
-        st.session_state.pokaz_hasla = not st.session_state.pokaz_hasla
-        st.rerun()
+    # --- DWA PRZYCISKI OBOK SIEBIE ---
+    c_btn1, c_btn2 = st.columns(2)
+    
+    with c_btn1:
+        etykieta_hasla = "❌ ZAMKNIJ BAZĘ HASEŁ" if st.session_state.pokaz_hasla else "💡 POKAŻ HASŁA I DOSTĘPY DO MASZYN"
+        if st.button(etykieta_hasla, use_container_width=True):
+            st.session_state.pokaz_hasla = not st.session_state.pokaz_hasla
+            st.session_state.pokaz_katalogi = False
+            st.rerun()
+            
+    with c_btn2:
+        etykieta_katalogi = "❌ ZAMKNIJ KATALOGI" if st.session_state.pokaz_katalogi else "📖 KATALOGI FALOWNIKÓW (ERROR CODES)"
+        if st.button(etykieta_katalogi, use_container_width=True):
+            st.session_state.pokaz_katalogi = not st.session_state.pokaz_katalogi
+            st.session_state.pokaz_hasla = False
+            st.rerun()
 
+    # --- OKNO Z HASŁAMI ---
     if st.session_state.pokaz_hasla:
         st.markdown('<div class="hasla-box">', unsafe_allow_html=True)
         st.markdown("### 🔐 Ściągawka z haseł i dostępów HMI / PLC:")
@@ -130,6 +151,34 @@ if not error_mode:
             st.dataframe(df_hd, use_container_width=True, hide_index=True)
         else:
             st.warning("Karta z hasłami w Arkuszu Google jest obecnie pusta.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- OKNO Z KATALOGAMI FALOWNIKÓW ---
+    if st.session_state.pokaz_katalogi:
+        st.markdown('<div class="falownik-box">', unsafe_allow_html=True)
+        st.markdown("### 📖 Wyszukiwarka błędów napędów (SEW, KEB, Lenze, Yaskawa...)")
+        
+        if 'producent' in df_kt.columns and 'kod' in df_kt.columns:
+            fc1, fc2 = st.columns([1, 2])
+            with fc1:
+                producenci = sorted(list(df_kt['producent'].unique()))
+                wybrany_prod = st.selectbox("Wybierz markę falownika:", [""] + producenci)
+            with fc2:
+                szukany_kod = st.text_input("Wpisz kod błędu wyświetlany na napędzie (np. F04 lub E.OP):").strip().lower()
+            
+            if wybrany_prod and szukany_kod:
+                wynik_bledu = df_kt[(df_kt['producent'].str.lower() == wybrany_prod.lower()) & 
+                                    (df_kt['kod'].str.lower() == szukany_kod)]
+                
+                if not wynik_bledu.empty:
+                    st.write("---")
+                    for _, row in wynik_bledu.iterrows():
+                        st.error(f"🚨 **Błąd: {row.get('kod','').upper()} — {row.get('nazwa_bledu','')}**")
+                        st.markdown(f"**Co sprawdzić / Procedura naprawcza:**\n{row.get('opis_rozwiazanie','')}")
+                else:
+                    st.warning(f"Nie znaleziono kodu '{szukany_kod.upper()}' dla producenta {wybrany_prod} w bazie danych.")
+        else:
+            st.error("Błąd struktury zakładki. Wymagane nagłówki w Arkuszu Google: producent, kod, nazwa_bledu, opis_rozwiazanie.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- SEKCJA FILTROWANIA ---
@@ -198,6 +247,4 @@ if not error_mode:
 
 # --- STOPKA ---
 st.write("---")
-st.info("MTR System Chmurowy v3.1")
-st.info(" Wszelakie pytania pisz pod adres : mateusz.rozwadowski@inter.ikea.com")
-st.info("udostępnianie surowo zakazane - upierdole ręce w dupe wsadze więc nie radzę ")
+st.
