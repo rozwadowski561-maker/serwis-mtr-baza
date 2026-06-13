@@ -153,7 +153,7 @@ if not error_mode:
             st.warning("Karta z hasłami w Arkuszu Google jest obecnie pusta.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- OKNO Z KATALOGAMI FALOWNIKÓW ---
+    # --- OKNO Z KATALOGAMI FALOWNIKÓW (Z POPRAWIONYM, PANCERNYM WYSZUKIWANIEM) ---
     if st.session_state.pokaz_katalogi:
         st.markdown('<div class="falownik-box">', unsafe_allow_html=True)
         st.markdown("### 📖 Wyszukiwarka błędów napędów (SEW, KEB, Lenze, Yaskawa...)")
@@ -164,11 +164,17 @@ if not error_mode:
                 producenci = sorted(list(df_kt['producent'].unique()))
                 wybrany_prod = st.selectbox("Wybierz markę falownika:", [""] + producenci)
             with fc2:
-                szukany_kod = st.text_input("Wpisz kod błędu wyświetlany na napędzie (np. F04 lub E.OP):").strip().lower()
+                szukany_kod = st.text_input("Wpisz kod błędu wyświetlany na napędzie (np. E.oc lub e.oc):").strip()
             
             if wybrany_prod and szukany_kod:
-                wynik_bledu = df_kt[(df_kt['producent'].str.lower() == wybrany_prod.lower()) & 
-                                    (df_kt['kod'].str.lower() == szukany_kod)]
+                # ⚙️ POPRAWKA: Czyszczenie wpisanego kodu ze spacji i zmiana na małe litery
+                czysty_szukany_kod = szukany_kod.replace(" ", "").lower()
+                
+                # ⚙️ POPRAWKA: Pancerny filtr uodporniony na spacje i wielkość liter w chmurze i w polu tekstowym
+                wynik_bledu = df_kt[
+                    (df_kt['producent'].str.lower() == wybrany_prod.lower()) & 
+                    (df_kt['kod'].str.replace(" ", "").str.lower() == czysty_szukany_kod)
+                ]
                 
                 if not wynik_bledu.empty:
                     st.write("---")
@@ -181,7 +187,9 @@ if not error_mode:
             st.error("Błąd struktury zakładki. Wymagane nagłówki w Arkuszu Google: producent, kod, nazwa_bledu, opis_rozwiazanie.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SEKCJA FILTROWANIA ---
+# =====================================================================
+# SEKCJA FILTROWANIA (Wyszukiwarka główna awarii)
+# =====================================================================
 st.write("---")
 st.subheader("🔍 Wyszukaj awarię")
 
@@ -247,6 +255,6 @@ if not error_mode:
 
 # --- STOPKA ---
 st.write("---")
-st.info("MTR System Chmurowy v5.0 - Pełna ochrona dostępu kluczem online.")
+st.info("MTR System Chmurowy v5.0 ")
 st.info("Wszelakie pytania pisz pod adres : mateusz.rozwadowski@inter.ikea.com")
 st.info("udostępnianie surowo zakazane - upierdole ręce w dupe wsadze więc nie radzę")
