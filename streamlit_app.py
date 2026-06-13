@@ -247,4 +247,6 @@ if not error_mode:
 
 # --- STOPKA ---
 st.write("---")
-st.
+st.info("MTR System Chmurowy v5.0 - Pełna ochrona dostępu kluczem online.")
+st.info("Wszelakie pytania pisz pod adres : mateusz.rozwadowski@inter.ikea.com")
+st.info("udostępnianie surowo zakazane - upierdole ręce w dupe wsadze więc nie radzę")
